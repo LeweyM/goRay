@@ -36,5 +36,20 @@ func (s *Sphere) intersects(r Ray.Ray) bool {
 		intersectsOnYAxis = false
 	}
 
+	// sphere: (x−x0)^2+(y−y0)^2+(z−z0)^2=r^2.  where x-x0 is pos-center
+	//sphere: dot(pos^2) == r^2
+	// ray: pos + t*dir
+
+	//    vec3 oc = r.origin() - center;
+	//    float a = dot(r.direction(), r.direction());
+	//    float b = 2.0 * dot(oc, r.direction());
+	//    float c = dot(oc,oc) - radius*radius;
+	//    float discriminant = b*b - 4*a*c;
+	//    return (discriminant>0);
+
+	r.GetPosition().Minus(s.position)
+
+	// intersection:
+
 	return intersectsOnXAxis || intersectsOnYAxis
 }

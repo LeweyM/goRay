@@ -21,7 +21,15 @@ func (v Vector) Y() float64 {
 }
 
 func (v Vector) String() string {
-	return fmt.Sprintf("x:%f, y:%f, z%f", v.X, v.y, v.z)
+	return fmt.Sprintf("x:%f, y:%f, z%f", v.x, v.y, v.z)
+}
+
+func (v Vector) Minus(vector Vector) Vector {
+	return Vector{
+		x: v.x - vector.x,
+		y: v.y - vector.y,
+		z: v.z - vector.z,
+	}
 }
 
 func New(x float64, y float64, z float64) *Vector {

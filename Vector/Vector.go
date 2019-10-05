@@ -1,6 +1,9 @@
 package Vector
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
 
 type Vector struct {
 	x float64
@@ -34,6 +37,20 @@ func (v Vector) Minus(v2 Vector) Vector {
 
 func (v Vector) Dot(v2 Vector) float64 {
 	return (v.x * v2.x) + (v.y * v2.y) + (v.z * v2.z)
+}
+
+func (v Vector) Normalize() Vector {
+	magnitude := v.magnitude()
+	if magnitude != 0 {
+		v.x = v.x / magnitude
+		v.y = v.y / magnitude
+		v.z = v.z / magnitude
+	}
+	return v
+}
+
+func (v Vector) magnitude() float64 {
+	return math.Sqrt(v.x*v.x + v.y*v.y + v.z*v.z)
 }
 
 func New(x float64, y float64, z float64) *Vector {

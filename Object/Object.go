@@ -1,7 +1,10 @@
 package Object
 
-import "goRay/Ray"
+import (
+	"goRay/Ray"
+	"goRay/Vector"
+)
 
 type Object interface {
-	intersectDistance(ray Ray.Ray) bool
+	intersectDistance(ray Ray.Ray) (bool, Vector.Vector)
 }

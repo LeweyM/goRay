@@ -24,12 +24,16 @@ func (v Vector) String() string {
 	return fmt.Sprintf("x:%f, y:%f, z%f", v.x, v.y, v.z)
 }
 
-func (v Vector) Minus(vector Vector) Vector {
+func (v Vector) Minus(v2 Vector) Vector {
 	return Vector{
-		x: v.x - vector.x,
-		y: v.y - vector.y,
-		z: v.z - vector.z,
+		x: v.x - v2.x,
+		y: v.y - v2.y,
+		z: v.z - v2.z,
 	}
+}
+
+func (v Vector) Dot(v2 Vector) float64 {
+	return (v.x * v2.x) + (v.y * v2.y) + (v.z * v2.z)
 }
 
 func New(x float64, y float64, z float64) *Vector {

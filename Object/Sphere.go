@@ -47,7 +47,8 @@ func (s *Sphere) intersects(r Ray.Ray) bool {
 	//    float discriminant = b*b - 4*a*c;
 	//    return (discriminant>0);
 
-	r.GetPosition().Minus(s.position)
+	oc := r.GetPosition().Minus(s.position)
+	a := r.GetDirection().dot(r.GetPosition())
 
 	// intersection:
 

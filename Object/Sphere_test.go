@@ -23,13 +23,13 @@ func TestSphereIntersectionTests(t *testing.T) {
 	}
 
 	spheres := []Sphere{
-		New(*Vector.New(1, 0, 0), 1),
-		New(*Vector.New(10, 0, 0), 1),
-		New(*Vector.New(0, 10, 0), 1),
-		New(*Vector.New(0, 10, 0), 1),
-		New(*Vector.New(0, -10, 0), 1),
-		New(*Vector.New(100, 0, 0), 10),
-		New(*Vector.New(100, 100, 100), 1),
+		*NewSphere(*Vector.New(1, 0, 0), 1),
+		*NewSphere(*Vector.New(10, 0, 0), 1),
+		*NewSphere(*Vector.New(0, 10, 0), 1),
+		*NewSphere(*Vector.New(0, 10, 0), 1),
+		*NewSphere(*Vector.New(0, -10, 0), 1),
+		*NewSphere(*Vector.New(100, 0, 0), 10),
+		*NewSphere(*Vector.New(100, 100, 100), 1),
 	}
 
 	results := []bool{
@@ -43,7 +43,7 @@ func TestSphereIntersectionTests(t *testing.T) {
 	}
 
 	for i, ray := range rays {
-		if intersects, _ := spheres[i].intersectDistance(ray); intersects != results[i] {
+		if intersects, _ := spheres[i].IntersectDistance(ray); intersects != results[i] {
 			t.Errorf("Test %d: Expected ray %b intersection with sphere %b to be: %t",
 				i, rays[i], spheres[i], results[i])
 		}
@@ -59,9 +59,9 @@ func TestSphereDistanceTests(t *testing.T) {
 	}
 
 	spheres := []Sphere{
-		New(*Vector.New(10, 0, 0), 1),
-		New(*Vector.New(100, 0, 0), 10),
-		New(*Vector.New(10, 10, 10), 1),
+		*NewSphere(*Vector.New(10, 0, 0), 1),
+		*NewSphere(*Vector.New(100, 0, 0), 10),
+		*NewSphere(*Vector.New(10, 10, 10), 1),
 	}
 
 	results := []float64{
@@ -71,7 +71,7 @@ func TestSphereDistanceTests(t *testing.T) {
 	}
 
 	for i, ray := range rays {
-		ok, distance := spheres[i].intersectDistance(ray)
+		ok, distance := spheres[i].IntersectDistance(ray)
 
 		if !ok {
 			t.Fatalf("Test %d: Doesn't intersect", i)
@@ -89,6 +89,5 @@ func TestSphereDistanceTests(t *testing.T) {
 func Pythagorus3d(x, y, z float64) float64 {
 	hyp2d := math.Sqrt(x*x + y*y)
 	hyp3d := math.Sqrt(z*z + hyp2d*hyp2d)
-
 	return hyp3d
 }

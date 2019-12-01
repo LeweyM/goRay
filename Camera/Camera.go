@@ -6,6 +6,7 @@ import (
 	"goRay/Vector"
 	"image/color"
 	"math"
+	"sync"
 )
 
 type PixelGrabber interface {
@@ -13,43 +14,145 @@ type PixelGrabber interface {
 }
 
 type Camera struct {
-	widthMatrix  []float64
-	heightMatrix []float64
-	height       int
-	width        int
-	origin       Vector.Vector
-	objectList   []Object.Object
-	pixelList    []Pixel
-}
-
-func (c *Camera) SetObject(object Object.Object) {
-	c.objectList = append(c.objectList, object)
-}
-
-func (c *Camera) ClearObjects() {
-	c.objectList = []Object.Object{}
+	height                    int
+	width                     int
+	origin                    Vector.Vector
+	ObjectList                []Object.Object
+	pixelList                 []Pixel
+	ScreenCellMatrix          [][]*Vector.Vector
+	YRotation                 float64
+	cameraRotationTransformer func(Vector.Vector) Vector.Vector
+	CameraPosition            Vector.Vector
+	primaryRays               []Ray.Ray
 }
 
 func (c *Camera) New(width int, height int, origin Vector.Vector) *Camera {
-	return &Camera{
-		widthMatrix:  getScreenMatrix(float64(width)),
-		heightMatrix: getScreenMatrix(float64(height)),
-		height:       height,
-		width:        width,
-		origin:       Vector.Vector{},
-		objectList:   []Object.Object{},
+
+	heightMatrix := getScreenMatrix(float64(height))
+	widthMatrix := getScreenMatrix(float64(width))
+
+	screenCellMatrix := make([][]*Vector.Vector, height)
+	for row, y := range heightMatrix {
+		screenCellMatrix[row] = make([]*Vector.Vector, width)
+		for col, x := range widthMatrix {
+			screenCellMatrix[row][col] = c.GetPixelHeadingVector(y, x, float64(height))
+		}
 	}
+
+	return &Camera{
+		ScreenCellMatrix:          screenCellMatrix,
+		cameraRotationTransformer: Vector.RotateYBuilder(0),
+		height:                    height,
+		width:                     width,
+		origin:                    origin,
+		ObjectList:                []Object.Object{},
+		YRotation:                 0,
+		CameraPosition:            Vector.Vector{},
+	}
+}
+
+func (c *Camera) TranslateCamera(vector Vector.Vector) {
+	c.CameraPosition = c.CameraPosition.Translate(vector)
+}
+
+func (c *Camera) RotateCamera(rads float64) {
+	c.YRotation = rads
+	c.UpdateCamRotationTransformer()
+}
+
+func (c *Camera) IncrementForward() {
+	camDirectionVector := Vector.New(0, 0, 1).RotateY(c.YRotation)
+	c.CameraPosition = c.CameraPosition.Translate(camDirectionVector)
+}
+
+
+func (c *Camera) DecrementForward() {
+	camDirectionVector := Vector.New(0, 0, -1).RotateY(c.YRotation)
+	c.CameraPosition = c.CameraPosition.Translate(camDirectionVector)
+}
+
+func (c *Camera) IncrementYRotation() {
+	c.YRotation = c.YRotation + math.Pi/32
+	c.UpdateCamRotationTransformer()
+}
+
+func (c *Camera) DecrementYRotation() {
+	c.YRotation = c.YRotation - math.Pi/32
+	c.UpdateCamRotationTransformer()
+}
+
+func (c *Camera) UpdateCamRotationTransformer() {
+	c.cameraRotationTransformer = Vector.RotateYBuilder(c.YRotation)
+}
+
+func (c *Camera) GetRotationLine() (x1 float32, y1 float32, x2 float32, y2 float32) {
+	rotationVector := c.cameraRotationTransformer(*Vector.New(0.0,0.0,1.0))
+	return 0, 0, float32(rotationVector.X()), float32(rotationVector.Z())
+}
+
+func (c *Camera) SetObject(object Object.Object) {
+	c.ObjectList = append(c.ObjectList, object)
+}
+
+func (c *Camera) ClearObjects() {
+	c.ObjectList = []Object.Object{}
 }
 
 func (c *Camera) CastRays() []Pixel {
 	c.pixelList = []Pixel{}
+	c.primaryRays = []Ray.Ray{}
 
-	for yIndex, y := range c.heightMatrix {
-		for xIndex, x := range c.widthMatrix {
-			ray := Ray.New(c.origin, *c.GetPixelHeadingVector(y, x, float64(c.height))) //TODO
-			c.pixelList = append(c.pixelList, c.GetPixel(xIndex, yIndex, ray))
+	for yIndex := 0; yIndex < c.height; yIndex++ {
+		for xIndex := 0; xIndex < c.width; xIndex++ {
+
+			headingVector    := c.ScreenCellMatrix[yIndex][xIndex]
+			rotatedVector    := c.cameraRotationTransformer(*headingVector)
+
+			primaryRay := Ray.New(c.CameraPosition, rotatedVector)
+
+			c.primaryRays = append(c.primaryRays, primaryRay)
+			c.pixelList = append(c.pixelList, c.GetPixel(xIndex, yIndex, primaryRay))
 		}
 	}
+
+	return c.pixelList
+}
+
+
+func (c *Camera) GetPrimaryRays() []Ray.Ray {
+	return c.primaryRays
+}
+
+func (c *Camera) CastRaysConcurrent() []Pixel {
+	c.pixelList = []Pixel{}
+	yRotateFn := Vector.RotateYBuilder(c.YRotation)
+
+	rayWorker := func(wg *sync.WaitGroup, mu *sync.Mutex, x, y int) {
+		defer wg.Done()
+
+		headingVector := c.ScreenCellMatrix[y][x]
+		rotatedHeadingVector := yRotateFn(*headingVector)
+
+		translatedRotatedVector := rotatedHeadingVector.Translate(c.CameraPosition)
+
+		ray := Ray.New(c.origin, translatedRotatedVector)
+
+		mu.Lock()
+		c.pixelList = append(c.pixelList, c.GetPixel(x, y, ray))
+		mu.Unlock()
+	}
+
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
+	for yIndex := 0; yIndex < c.height; yIndex++ {
+		for xIndex := 0; xIndex < c.width; xIndex++ {
+			wg.Add(1)
+			go rayWorker(&wg, &mu, xIndex, yIndex)
+		}
+	}
+
+	wg.Wait()
 	return c.pixelList
 }
 
@@ -86,7 +189,7 @@ func (p Pixel) Color() color.Color {
 }
 
 func (c *Camera) GetPixel(x, y int, ray Ray.Ray) Pixel {
-	for _, object := range c.objectList {
+	for _, object := range c.ObjectList {
 		intersects, _ := object.IntersectDistance(ray)
 		if intersects {
 			return Pixel{

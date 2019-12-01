@@ -70,8 +70,7 @@ func TestCamera_GetPixelHeadingVector(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &Camera{}
-			got := c.GetPixelHeadingVector(tt.args.pHeight, tt.args.pWidth, tt.args.unitZoom)
+			got := GetPixelHeadingVector(tt.args.pHeight, tt.args.pWidth, tt.args.unitZoom)
 
 			if vectorIsEqual(got, tt.want) {
 				t.Errorf("GetPixelHeadingVector() = %v, want %v", got, tt.want)
@@ -191,10 +190,8 @@ func TestCamera_GetPixel(t *testing.T) {
 }
 
 func BenchmarkCamera_GetPixelHeadingVector(b *testing.B) {
-	camera := Camera{}
-	c := camera.New(10, 10, *Vector.New(0, 0, 0))
 	for i := 0; i < b.N; i++ {
-		c.GetPixelHeadingVector(10, 10, 1)
+		GetPixelHeadingVector(10, 10, 1)
 	}
 }
 
@@ -203,8 +200,7 @@ func BenchmarkCamera_CastRays1000(b *testing.B) {benchmarkCastRays(b, 1000)}
 func BenchmarkCamera_CastRays1000000(b *testing.B) {benchmarkCastRays(b, 1000000)}
 
 func benchmarkCastRays(b *testing.B, n int) {
-	camera := Camera{}
-	c := camera.New(3, 3, *Vector.New(0, 0, 0))
+	c := New(3, 3, *Vector.New(0, 0, 0))
 	setNSpheres(c, n)
 	for i := 0; i < b.N; i++ {
 		c.CastRays()
@@ -265,8 +261,7 @@ func TestWalking(t *testing.T) {
 	spherePosition := Vector.New(0,0, 50)
 	origin := Vector.New(0,0, 0)
 
-	c := Camera{}
-	camera := c.New(1, 1, *origin)
+	camera := New(1, 1, *origin)
 	camera.SetObject(Object.NewSphere(*spherePosition, 1))
 
 	turnQuarterLeft := func() {turnLeft(camera, 16)}
@@ -331,8 +326,7 @@ func testCenterRayOfCamera(translation *Vector.Vector, rotationRads float64) Pix
 	spherePosition := Vector.New(0,0, 50)
 	origin := Vector.New(0,0, 0)
 
-	c := Camera{}
-	camera := c.New(1, 1, *origin)
+	camera := New(1, 1, *origin)
 	camera.SetObject(Object.NewSphere(*spherePosition, 3))
 	camera.RotateCamera(rotationRads)
 	camera.TranslateCamera(*translation)

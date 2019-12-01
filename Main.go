@@ -12,10 +12,8 @@ func main() {
 	h := 100
 	w := 100
 
-	cam := Camera.Camera{}
-
 	camOrigin := Vector.New(0, 0, 100)
-	camera := cam.New(w, h, *camOrigin)
+	camera := Camera.New(w, h, *camOrigin)
 
 	sphere := Object.NewSphere(*Vector.New(0, 0, 50), 10)
 	sphere1 := Object.NewSphere(*Vector.New(20, 0, 50), 10)

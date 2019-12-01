@@ -26,7 +26,7 @@ type Camera struct {
 	primaryRays               []Ray.Ray
 }
 
-func (c *Camera) New(width int, height int, origin Vector.Vector) *Camera {
+func New(width int, height int, origin Vector.Vector) *Camera {
 
 	heightMatrix := getScreenMatrix(float64(height))
 	widthMatrix := getScreenMatrix(float64(width))
@@ -35,7 +35,7 @@ func (c *Camera) New(width int, height int, origin Vector.Vector) *Camera {
 	for row, y := range heightMatrix {
 		screenCellMatrix[row] = make([]*Vector.Vector, width)
 		for col, x := range widthMatrix {
-			screenCellMatrix[row][col] = c.GetPixelHeadingVector(y, x, float64(height))
+			screenCellMatrix[row][col] = GetPixelHeadingVector(y, x, float64(height))
 		}
 	}
 
@@ -158,7 +158,7 @@ func (c *Camera) CastRaysConcurrent() []Pixel {
 
 // get heading vector for pixel from
 // worldOrigin by pixelHeight and pixelWidth
-func (c *Camera) GetPixelHeadingVector(pYOffset, pXOffset, zoomUnit float64) *Vector.Vector {
+func GetPixelHeadingVector(pYOffset, pXOffset, zoomUnit float64) *Vector.Vector {
 	zAngle := math.Atan(pXOffset / zoomUnit)
 	yAngle := math.Atan(pYOffset / zoomUnit)
 

@@ -7,6 +7,8 @@ import (
 	"testing"
 )
 
+var white = *Vector.New(1,1,1)
+
 func TestGetIntersectionPoint(t *testing.T) {
 	origin := Vector.Vector{}
 	tests := []struct {
@@ -36,7 +38,7 @@ func TestGetIntersectionPoint(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		sphere := NewSphere(tt.spherePos, 5)
+		sphere := NewSphere(tt.spherePos, white, 5)
 
 		res := sphere.GetHitNormal(tt.ray, tt.t)
 
@@ -105,15 +107,15 @@ func TestSphereDistanceTests(t *testing.T) {
 	}
 
 	spheres := []Sphere{
-		*NewSphere(*Vector.New(10, 0, 0), 1),
-		*NewSphere(*Vector.New(100, 0, 0), 10),
-		*NewSphere(*Vector.New(10, 10, 10), 1),
+		*NewSphere(*Vector.New(10, 0, 0), white, 1),
+		*NewSphere(*Vector.New(100, 0, 0), white, 10),
+		*NewSphere(*Vector.New(10, 10, 10), white, 1),
 	}
 
 	results := []float64{
 		9,
 		90,
-		Pythagorus3d(10, 10, 10) - 1,
+		Pythagoras3d(10, 10, 10) - 1,
 	}
 
 	for i, ray := range rays {
@@ -132,7 +134,7 @@ func TestSphereDistanceTests(t *testing.T) {
 	}
 }
 
-func Pythagorus3d(x, y, z float64) float64 {
+func Pythagoras3d(x, y, z float64) float64 {
 	hyp2d := math.Sqrt(x*x + y*y)
 	hyp3d := math.Sqrt(z*z + hyp2d*hyp2d)
 	return hyp3d
@@ -140,7 +142,7 @@ func Pythagorus3d(x, y, z float64) float64 {
 
 func testRaySphereIntersection(rayDirection Vector.Vector, spherePosition Vector.Vector) (bool, float64) {
 	origin := Vector.New(0, 0, 0)
-	sphere := NewSphere(spherePosition, 3)
+	sphere := NewSphere(spherePosition, white, 3)
 	ray := Ray.New(*origin, rayDirection)
 	return sphere.IntersectDistance(ray)
 }

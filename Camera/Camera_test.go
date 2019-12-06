@@ -120,41 +120,41 @@ func Test_getScreenMatrix(t *testing.T) {
 func TestCastRays(t *testing.T) {
 	quarterTurnRight := math.Pi / 2
 	tests := []struct {
-		translation  Vector.Vector
-		rotationRads float64
-		intersects   bool
+		translation     Vector.Vector
+		rotationRads    float64
+		shouldIntersect bool
 	}{
 		{
-			translation:  *Vector.New(0, 0, 0),
-			rotationRads: 0,
-			intersects:   true,
+			translation:     *Vector.New(0, 0, 0),
+			rotationRads:    0,
+			shouldIntersect: true,
 		},
 		{
-			translation:  *Vector.New(0, 0, 100),
-			rotationRads: 0,
-			intersects:   false,
+			translation:     *Vector.New(0, 0, 100),
+			rotationRads:    0,
+			shouldIntersect: false,
 		},
 		{
-			translation:  *Vector.New(0, 0, 100),
-			rotationRads: quarterTurnRight * 2,
-			intersects:   true,
+			translation:     *Vector.New(0, 0, 100),
+			rotationRads:    quarterTurnRight * 2,
+			shouldIntersect: true,
 		},
 		{
-			translation:  *Vector.New(50, 0, 50),
-			rotationRads: quarterTurnRight * 3,
-			intersects:   true,
+			translation:     *Vector.New(50, 0, 50),
+			rotationRads:    quarterTurnRight * 3,
+			shouldIntersect: true,
 		},
 		{
-			translation:  *Vector.New(50, 0, 0),
-			rotationRads: quarterTurnRight * 3.5,
-			intersects:   true,
+			translation:     *Vector.New(50, 0, 0),
+			rotationRads:    quarterTurnRight * 3.5,
+			shouldIntersect: true,
 		},
 	}
 
 	for i, tt := range tests {
 		centerRayPixel, backgroundPixel := testCenterRayOfCamera(&tt.translation, tt.rotationRads)
-		if tt.intersects != (centerRayPixel.Color() != backgroundPixel.Color()) {
-			t.Errorf("Test %d: Center of camera: Expected intersection to be '%t'", i+1, tt.intersects)
+		if tt.shouldIntersect != (centerRayPixel.Color() != backgroundPixel.Color()) {
+			t.Errorf("Test %d: Center of camera: Expected intersection to be '%t'", i+1, tt.shouldIntersect)
 		}
 	}
 }
@@ -177,9 +177,10 @@ func TestFacingRatio(t *testing.T) {
 
 	for i, tt := range tests {
 		origin := Vector.New(0, 0, 0)
+		colorVector := *Vector.New(1, 0, 0)
 
 		camera := New(1, 1, *origin)
-		camera.SetObject(Object.NewSphere(tt.spherePos, sphereRadius))
+		camera.SetObject(Object.NewSphere(tt.spherePos, colorVector, sphereRadius))
 
 		pixel := camera.CastRays()[0]
 		r, _, _, _ := pixel.Color().RGBA()
@@ -193,12 +194,13 @@ func TestFacingRatio(t *testing.T) {
 
 func TestWalking(t *testing.T) {
 	spherePosition := Vector.New(0, 0, 50)
+	colorVector := *Vector.New(0, 0, 0)
 	origin := Vector.New(0, 0, 0)
 
 	backgroundCamera := New(1, 1, *origin)
 
 	camera := New(1, 1, *origin)
-	camera.SetObject(Object.NewSphere(*spherePosition, 1))
+	camera.SetObject(Object.NewSphere(*spherePosition,colorVector, 1))
 
 	turnQuarterLeft := func() {
 		turnLeft(camera, 16)
@@ -244,76 +246,6 @@ func TestWalking(t *testing.T) {
 	walkForward(camera, 200)
 	//back to origin
 }
-
-//func TestCamera_GetPixel(t *testing.T) {
-//	zRay := Ray.New(*Vector.New(0, 0, 0), *Vector.New(0, 0, 1))
-//	type fields struct {
-//		height       int
-//		width        int
-//		origin       Vector.Vector
-//		objectList   []Object.Object
-//		pixelList    []Pixel
-//	}
-//	type args struct {
-//		x   int
-//		y   int
-//		ray Ray.Ray
-//	}
-//	tests := []struct {
-//		name   string
-//		fields fields
-//		args   args
-//		want   Pixel
-//	}{
-//		{
-//			name: "without objects",
-//			fields: fields{
-//				origin: Vector.Vector{},
-//			},
-//			args: args{
-//				x:   0,
-//				y:   0,
-//				ray: zRay,
-//			},
-//			want: Pixel{
-//				color: color.Black,
-//				x:     0,
-//				y:     0,
-//			},
-//		},
-//		{
-//			name: "with an object in front",
-//			fields: fields{
-//				origin:     Vector.Vector{},
-//				objectList: []Object.Object{Object.NewSphere(*Vector.New(0, 0, 5), 2, )},
-//			},
-//			args: args{
-//				x:   0,
-//				y:   0,
-//				ray: zRay,
-//			},
-//			want: Pixel{
-//				color: color.White,
-//				x:     0,
-//				y:     0,
-//			},
-//		},
-//	}
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			c := &Camera{
-//				height:       tt.fields.height,
-//				width:        tt.fields.width,
-//				origin:       tt.fields.origin,
-//				ObjectList:   tt.fields.objectList,
-//				pixelList:    tt.fields.pixelList,
-//			}
-//			if got := c.getPixel(tt.args.x, tt.args.y, tt.args.ray); !reflect.DeepEqual(got, tt.want) {
-//				t.Errorf("getPixel() = %v, want %v", got, tt.want)
-//			}
-//		})
-//	}
-//}
 
 func BenchmarkCamera_GetPixelHeadingVector(b *testing.B) {
 	for i := 0; i < b.N; i++ {
@@ -368,9 +300,10 @@ func checkIntersection(c *Camera, bc *Camera, t *testing.T, shouldIntersect bool
 func testCenterRayOfCamera(translation *Vector.Vector, rotationRads float64) (Pixel, Pixel) {
 	spherePosition := Vector.New(0, 0, 50)
 	origin := Vector.New(0, 0, 0)
+	colorVector := *Vector.New(0, 0, 0)
 
 	camera := New(1, 1, *origin)
-	camera.SetObject(Object.NewSphere(*spherePosition, 3))
+	camera.SetObject(Object.NewSphere(*spherePosition, colorVector, 3))
 	camera.RotateCamera(rotationRads)
 	camera.TranslateCamera(*translation)
 
@@ -389,7 +322,7 @@ func setNSpheres(camera *Camera, n int) {
 
 func getRandomSphere() *Object.Sphere {
 	vector := Vector.New(rand.Float64(), rand.Float64(), rand.Float64())
-	return Object.NewSphere(*vector, rand.Int())
+	return Object.NewSphere(*vector, *vector, rand.Int())
 }
 
 func vectorIsEqual(v1 *Vector.Vector, v2 *Vector.Vector) bool {

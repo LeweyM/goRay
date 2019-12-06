@@ -10,4 +10,5 @@ type Object interface {
 	IntersectDistance(ray Ray.Ray) (bool, float64)
 	Draw(renderer *sdl.Renderer, xOffset, yOffset int32)
 	GetHitNormal(ray Ray.Ray, t float64) Vector.Vector
+	GetSurfaceColor() Vector.Vector
 }

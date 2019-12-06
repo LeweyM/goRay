@@ -193,33 +193,22 @@ func (c *Camera) getPixel(x, y int, ray Ray.Ray) Pixel {
 
 		if intersects {
 			hitNormal := object.GetHitNormal(ray, t)
+			colorVector := object.GetSurfaceColor()
 			facingRatio := hitNormal.Dot(ray.Direction().Reverse())
 			facingRatio = math.Max(0, facingRatio)
 
-			rr, gg, bb := brighten(1.0, 0.0, 0.0, facingRatio)
-
-			color := color.RGBA{
-				R: rr,
-				G: gg,
-				B: bb,
-				A: 255,
-			}
+			rr, gg, bb := brighten(colorVector.X(), colorVector.Y(), colorVector.Z(), facingRatio)
 
 			return Pixel{
-				color: color,
+				color: color.RGBA{R: rr, G: gg, B: bb, A: 255},
 				x:     x,
 				y:     y,
 			}
 		}
 	}
-	black := color.RGBA{
-		R: 0,
-		G: 0,
-		B: 160,
-		A: 0,
-	}
+
 	return Pixel{
-		color: black,
+		color: color.RGBA{R: 0, G: 0, B: 160, A: 0},
 		x:     x,
 		y:     y,
 	}

@@ -10,7 +10,12 @@ import (
 
 type Sphere struct {
 	center Vector.Vector
+	color  Vector.Vector
 	radius int
+}
+
+func (s *Sphere) GetSurfaceColor() Vector.Vector {
+	return s.color
 }
 
 func (s *Sphere) GetHitNormal(ray Ray.Ray, t float64) Vector.Vector {
@@ -19,13 +24,14 @@ func (s *Sphere) GetHitNormal(ray Ray.Ray, t float64) Vector.Vector {
 }
 
 func (s *Sphere) Draw(renderer *sdl.Renderer, xOffset, yOffset int32) {
-	DrawCircle(renderer, int32(s.center.X()) + xOffset, int32(s.center.Z()) + yOffset, int32(s.radius))
+	DrawCircle(renderer, int32(s.center.X())+xOffset, int32(s.center.Z())+yOffset, int32(s.radius))
 }
 
-func NewSphere(center Vector.Vector, radius int) *Sphere {
+func NewSphere(center, colorVector Vector.Vector, radius int) *Sphere {
 	return &Sphere{
 		center: center,
 		radius: radius,
+		color:  colorVector,
 	}
 }
 
@@ -38,7 +44,7 @@ func (s *Sphere) solveQuadratic(r Ray.Ray) (bool, float64, float64) {
 
 	a := r.Direction().Dot(r.Direction())
 	b := (r.Direction().Scale(2)).Dot(loc)
-	c := loc.Dot(loc) - float64(s.radius * s.radius)
+	c := loc.Dot(loc) - float64(s.radius*s.radius)
 
 	discriminant := b*b - (4 * a * c)
 
@@ -85,7 +91,6 @@ func (s *Sphere) IntersectDistance(r Ray.Ray) (bool, float64) {
 func (s *Sphere) Radius() int {
 	return s.radius
 }
-
 
 func DrawCircle(renderer *sdl.Renderer, centreX, centreY, radius int32) {
 	x := radius - 1

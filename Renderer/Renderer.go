@@ -145,9 +145,9 @@ func drawVerticalPrimaryRays(camera Camera.Camera, renderer *sdl.Renderer) {
 		y2 := endPoint.Y()
 
 		if hits {
-			drawHitLine(float32(x1), float32(y1), float32(x2), float32(y2), 300, renderer)
+			drawHitLine(float32(x1), float32(y1), float32(x2), float32(y2), 30, renderer)
 		} else {
-			drawLine(float32(x1), float32(y1), float32(x2), float32(y2), 300, renderer)
+			drawLine(float32(x1), float32(y1), float32(x2), float32(y2), 30, renderer)
 		}
 	}
 }
@@ -201,8 +201,8 @@ func drawPixels(pixels []Camera.Pixel, w int32, h int32, renderer *sdl.Renderer)
 		wUnit := 600 / w
 		hUnit := 600 / h
 
-		r, g, b, a := p.Color().RGBA()
-		err := renderer.SetDrawColor(uint8(r), uint8(g), uint8(b), uint8(a))
+		r, g, b, _ := p.Color().RGBA()
+		err := renderer.SetDrawColor(uint8(r / 0x101), uint8(g / 0x101), uint8(b / 0x101), 0)
 		if err != nil {
 			panic(err)
 		}

@@ -7,42 +7,81 @@ import (
 	"testing"
 )
 
+func TestGetIntersectionPoint(t *testing.T) {
+	origin := Vector.Vector{}
+	tests := []struct {
+		spherePos          Vector.Vector
+		intersectionVector Vector.Vector
+		ray                Ray.Ray
+		t                  float64
+	}{
+		{
+			spherePos:          *Vector.New(0, 0, 50),
+			ray:                Ray.New(origin, *Vector.New(0, 0, 1)),
+			intersectionVector: *Vector.New(0, 0, -1),
+			t:                  45,
+		},
+		{
+			spherePos:          *Vector.New(5, 0, 50),
+			ray:                Ray.New(origin, *Vector.New(0, 0, 1)),
+			intersectionVector: *Vector.New(-1, 0, 0),
+			t:                  50,
+		},
+		{
+			spherePos:          *Vector.New(-5, 0, 50),
+			ray:                Ray.New(origin, *Vector.New(0, 0, 1)),
+			intersectionVector: *Vector.New(1, 0, 0),
+			t:                  50,
+		},
+	}
+
+	for i, tt := range tests {
+		sphere := NewSphere(tt.spherePos, 5)
+
+		res := sphere.GetHitNormal(tt.ray, tt.t)
+
+		if tt.intersectionVector != res {
+			t.Errorf("Test %d: Incorrect interception point, expected %v, got %v", i, tt.intersectionVector, res)
+		}
+	}
+}
+
 func TestSphereIntersectionTests(t *testing.T) {
 	headingForwardOnXAxis := *Vector.New(1, 0, 0)
 	headingForwardOnXandYAxis := *Vector.New(1, 1, 0)
 	headingBackwardsOnXAxis := *Vector.New(-1, 0, 0)
-	tests := []struct{
-		rayDirection Vector.Vector
+	tests := []struct {
+		rayDirection   Vector.Vector
 		spherePosition Vector.Vector
-		intersects bool
+		intersects     bool
 	}{
 		{
 			rayDirection:   headingForwardOnXAxis,
-			spherePosition: *Vector.New(10,0,0),
+			spherePosition: *Vector.New(10, 0, 0),
 			intersects:     true,
-		},{
+		}, {
 			rayDirection:   headingForwardOnXAxis,
-			spherePosition: *Vector.New(0,10,0),
+			spherePosition: *Vector.New(0, 10, 0),
 			intersects:     false,
-		},{
+		}, {
 			rayDirection:   headingForwardOnXAxis,
-			spherePosition: *Vector.New(-10,0,0),
+			spherePosition: *Vector.New(-10, 0, 0),
 			intersects:     false,
-		},{
+		}, {
 			rayDirection:   headingForwardOnXAxis,
-			spherePosition: *Vector.New(10,3,0),
+			spherePosition: *Vector.New(10, 3, 0),
 			intersects:     true,
-		},{
+		}, {
 			rayDirection:   headingBackwardsOnXAxis,
-			spherePosition: *Vector.New(-100,0,0),
+			spherePosition: *Vector.New(-100, 0, 0),
 			intersects:     true,
-		},{
+		}, {
 			rayDirection:   headingBackwardsOnXAxis.RotateY(math.Pi),
-			spherePosition: *Vector.New(100,0,0),
+			spherePosition: *Vector.New(100, 0, 0),
 			intersects:     true,
-		},{
+		}, {
 			rayDirection:   headingForwardOnXandYAxis,
-			spherePosition: *Vector.New(100,100,0),
+			spherePosition: *Vector.New(100, 100, 0),
 			intersects:     true,
 		},
 	}
@@ -52,16 +91,9 @@ func TestSphereIntersectionTests(t *testing.T) {
 
 		if intersects != tt.intersects {
 			t.Errorf("Test %d: Expected interesection to be '%t', got '%t'",
-				i + 1, tt.intersects, intersects, )
+				i+1, tt.intersects, intersects, )
 		}
 	}
-}
-
-func testRaySphereIntersection(rayDirection Vector.Vector, spherePosition Vector.Vector) (bool, float64) {
-	origin := Vector.New(0, 0, 0)
-	sphere := NewSphere(spherePosition, 3)
-	ray := Ray.New(*origin, rayDirection)
-	return sphere.IntersectDistance(ray)
 }
 
 func TestSphereDistanceTests(t *testing.T) {
@@ -104,4 +136,11 @@ func Pythagorus3d(x, y, z float64) float64 {
 	hyp2d := math.Sqrt(x*x + y*y)
 	hyp3d := math.Sqrt(z*z + hyp2d*hyp2d)
 	return hyp3d
+}
+
+func testRaySphereIntersection(rayDirection Vector.Vector, spherePosition Vector.Vector) (bool, float64) {
+	origin := Vector.New(0, 0, 0)
+	sphere := NewSphere(spherePosition, 3)
+	ray := Ray.New(*origin, rayDirection)
+	return sphere.IntersectDistance(ray)
 }

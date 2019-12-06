@@ -44,6 +44,14 @@ func (v Vector) Dot(v2 Vector) float64 {
 	return (v.x * v2.x) + (v.y * v2.y) + (v.z * v2.z)
 }
 
+func (v Vector) Reverse() Vector {
+	return Vector{
+		x: -v.x,
+		y: -v.y,
+		z: -v.z,
+	}
+}
+
 // Deprecated due to performance
 func (v Vector) RotateY(radAngle float64) Vector {
 	x := (v.X() * math.Cos(radAngle)) + (v.Z() * math.Sin(radAngle))

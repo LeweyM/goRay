@@ -104,14 +104,13 @@ func (c *Camera) CastRays() []Pixel {
 
 	for yIndex := 0; yIndex < c.height; yIndex++ {
 		for xIndex := 0; xIndex < c.width; xIndex++ {
-
 			headingVector    := c.ScreenCellMatrix[yIndex][xIndex]
 			rotatedVector    := c.cameraRotationTransformer(*headingVector)
 
 			primaryRay := Ray.New(c.CameraPosition, rotatedVector)
 
 			c.primaryRays = append(c.primaryRays, primaryRay)
-			c.pixelList = append(c.pixelList, c.GetPixel(xIndex, yIndex, primaryRay))
+			c.pixelList = append(c.pixelList, c.getPixel(xIndex, yIndex, primaryRay))
 		}
 	}
 
@@ -138,7 +137,7 @@ func (c *Camera) CastRaysConcurrent() []Pixel {
 		ray := Ray.New(c.origin, translatedRotatedVector)
 
 		mu.Lock()
-		c.pixelList = append(c.pixelList, c.GetPixel(x, y, ray))
+		c.pixelList = append(c.pixelList, c.getPixel(x, y, ray))
 		mu.Unlock()
 	}
 
@@ -188,22 +187,50 @@ func (p Pixel) Color() color.Color {
 	return p.color
 }
 
-func (c *Camera) GetPixel(x, y int, ray Ray.Ray) Pixel {
+func (c *Camera) getPixel(x, y int, ray Ray.Ray) Pixel {
 	for _, object := range c.ObjectList {
-		intersects, _ := object.IntersectDistance(ray)
+		intersects, t := object.IntersectDistance(ray)
+
 		if intersects {
+			hitNormal := object.GetHitNormal(ray, t)
+			facingRatio := hitNormal.Dot(ray.Direction().Reverse())
+			facingRatio = math.Max(0, facingRatio)
+
+			rr, gg, bb := brighten(1.0, 0.0, 0.0, facingRatio)
+
+			color := color.RGBA{
+				R: rr,
+				G: gg,
+				B: bb,
+				A: 255,
+			}
+
 			return Pixel{
-				color: color.White,
+				color: color,
 				x:     x,
 				y:     y,
 			}
 		}
 	}
+	black := color.RGBA{
+		R: 0,
+		G: 0,
+		B: 160,
+		A: 0,
+	}
 	return Pixel{
-		color: color.Black,
+		color: black,
 		x:     x,
 		y:     y,
 	}
+}
+
+func brighten(r, g, b, f float64) (uint8, uint8, uint8) {
+	scale := f * 255.99
+	rr := uint8(scale * r)
+	gg := uint8(scale * g)
+	bb := uint8(scale * b)
+	return rr, gg, bb
 }
 
 func getScreenMatrix(scale float64) []float64 {

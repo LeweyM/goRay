@@ -13,6 +13,11 @@ type Sphere struct {
 	radius int
 }
 
+func (s *Sphere) GetHitNormal(ray Ray.Ray, t float64) Vector.Vector {
+	phit := ray.Origin().Translate(ray.Direction().Scale(t))
+	return phit.Minus(s.center).Normalize()
+}
+
 func (s *Sphere) Draw(renderer *sdl.Renderer, xOffset, yOffset int32) {
 	DrawCircle(renderer, int32(s.center.X()) + xOffset, int32(s.center.Z()) + yOffset, int32(s.radius))
 }

@@ -159,39 +159,6 @@ func TestCastRays(t *testing.T) {
 	}
 }
 
-func TestFacingRatio(t *testing.T) {
-	sphereRadius := 4
-	tests := []struct {
-		spherePos Vector.Vector
-		red       uint8
-	}{
-		{
-			spherePos: *Vector.New(0, 0, 50),
-			red:       255,
-		},
-		{
-			spherePos: *Vector.New(0, 0, -50),
-			red:       0,
-		},
-	}
-
-	for i, tt := range tests {
-		origin := Vector.New(0, 0, 0)
-		colorVector := *Vector.New(1, 0, 0)
-
-		camera := New(1, 1, *origin)
-		camera.SetObject(Object.NewSphere(tt.spherePos, colorVector, sphereRadius))
-
-		pixel := camera.CastRays()[0]
-		r, _, _, _ := pixel.Color().RGBA()
-		red := uint8(r / 0x101)
-
-		if tt.red != red {
-			t.Errorf("Test %d: Red not correct, expected '%d', got '%d'", i, tt.red, red)
-		}
-	}
-}
-
 func TestWalking(t *testing.T) {
 	spherePosition := Vector.New(0, 0, 50)
 	colorVector := *Vector.New(0, 0, 0)
@@ -253,26 +220,27 @@ func BenchmarkCamera_GetPixelHeadingVector(b *testing.B) {
 	}
 }
 
-func BenchmarkCamera_CastRays10(b *testing.B)      { benchmarkCastRays(b, 10) }
-func BenchmarkCamera_CastRays1000(b *testing.B)    { benchmarkCastRays(b, 1000) }
+//func BenchmarkCamera_CastRays10(b *testing.B)      { benchmarkCastRays(b, 10) }
+//func BenchmarkCamera_CastRays1000(b *testing.B)    { benchmarkCastRays(b, 1000) }
 func BenchmarkCamera_CastRays1000000(b *testing.B) { benchmarkCastRays(b, 1000000) }
 
+func BenchmarkConcurrent_Camera_CastRays1000000(b *testing.B) { benchmarkCastRaysConcurrent(b, 1000000) }
+
 func benchmarkCastRays(b *testing.B, n int) {
-	c := New(3, 3, *Vector.New(0, 0, 0))
+	c := New(100, 100, *Vector.New(0, 0, 0))
 	setNSpheres(c, n)
 	for i := 0; i < b.N; i++ {
 		c.CastRays()
 	}
 }
 
-//func benchmarkCastRaysConcurrent(b *testing.B, n int) {
-//	camera := Camera{}
-//	c := camera.New(3, 3, *Vector.New(0, 0, 0))
-//	setNSpheres(c, n)
-//	for i := 0; i < b.N; i++ {
-//		c.CastRaysConcurrent()
-//	}
-//}
+func benchmarkCastRaysConcurrent(b *testing.B, n int) {
+	c := New(100, 100, *Vector.New(0, 0, 0))
+	setNSpheres(c, n)
+	for i := 0; i < b.N; i++ {
+		c.CastRaysConcurrent()
+	}
+}
 
 func walkForward(c *Camera, steps int) {
 	for i := 0; i < steps; i++ {

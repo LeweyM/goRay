@@ -36,7 +36,7 @@ func Render(w, h int32, camera Camera.Camera) {
 		renderer.SetDrawColor(0, 0, 0, 0)
 		renderer.Clear()
 
-		drawPixels(camera.CastRaysConcurrent(), w, h, renderer)
+		drawPixels(camera.CastRays(), w, h, renderer)
 
 		drawPrimaryRays(camera, renderer)
 		drawVerticalPrimaryRays(camera, renderer)

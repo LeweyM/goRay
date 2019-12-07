@@ -133,13 +133,13 @@ func (c *Camera) CastRaysConcurrent() []Pixel {
 
 				primaryRay := Ray.New(c.CameraPosition, rotatedVector)
 
-				list[y * c.width + x] = c.getPixel(x, y, primaryRay)
+				list[y*c.width+x] = c.getPixel(x, y, primaryRay)
 			}
 		}
 	}
 
 	var wg sync.WaitGroup
-	list := make([]Pixel, c.width * c.height)
+	list := make([]Pixel, c.width*c.height)
 
 	cpuSplitFactor := 6
 
@@ -193,26 +193,48 @@ func (p Pixel) Color() color.Color {
 }
 
 func (c *Camera) getPixel(x, y int, ray Ray.Ray) Pixel {
+	type objectWithDistance struct {
+		object Object.Object
+		t      float64
+	}
+	intersectionObject := objectWithDistance{
+		object: nil,
+		t:      math.MaxFloat64,
+	}
+
 	for _, object := range c.ObjectList {
 		intersects, t := object.IntersectDistance(ray)
 
 		if intersects {
-			hitNormal := object.GetHitNormal(ray, t)
-			colorVector := object.GetSurfaceColor()
-			facingRatio := hitNormal.Dot(ray.Direction().Reverse())
-			facingRatio = math.Max(0, facingRatio)
-
-			rr, gg, bb := scaleRGB(colorVector.X(), colorVector.Y(), colorVector.Z(), facingRatio)
-
-			return Pixel{
-				color: color.RGBA{R: rr, G: gg, B: bb, A: 255},
-				x:     x,
-				y:     y,
+			if t < intersectionObject.t {
+				intersectionObject = objectWithDistance{
+					object: object,
+					t:      t,
+				}
 			}
 		}
 	}
 
-	return getBackgroundPixel(ray, x, y)
+	if intersectionObject.object != nil {
+		return Pixel{
+			color: getColorFromObject(ray, intersectionObject.t, intersectionObject.object),
+			x:     x,
+			y:     y,
+		}
+	} else {
+		return getBackgroundPixel(ray, x, y)
+	}
+}
+
+func getColorFromObject(ray Ray.Ray, t float64, object Object.Object) color.RGBA {
+	hitNormal := object.GetHitNormal(ray, t)
+	colorVector := object.GetSurfaceColor()
+	facingRatio := hitNormal.Dot(ray.Direction().Reverse())
+	facingRatio = math.Max(0, facingRatio)
+
+	rr, gg, bb := scaleRGB(colorVector.X(), colorVector.Y(), colorVector.Z(), facingRatio)
+
+	return color.RGBA{R: rr, G: gg, B: bb, A: 255}
 }
 
 func getBackgroundPixel(ray Ray.Ray, x, y int) Pixel {

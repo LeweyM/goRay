@@ -3,6 +3,7 @@ package Camera
 import (
 	"goRay/Object"
 	"goRay/Vector"
+	color2 "image/color"
 	"math"
 	"math/rand"
 	"reflect"
@@ -159,6 +160,44 @@ func TestCastRays(t *testing.T) {
 	}
 }
 
+func TestObjectRenderOrder(t *testing.T) {
+	red := *Vector.New(1, 0, 0)
+	blue := *Vector.New(0, 0, 1)
+
+	blueAtZ50 := Object.NewSphere(*Vector.New(0, 0, 50), blue, 3)
+	redAtZ100 := Object.NewSphere(*Vector.New(0, 0, 100), red, 3)
+
+	tests := []struct {
+		expectedColor     color2.RGBA
+		firstSphereAdded  *Object.Sphere
+		secondSphereAdded *Object.Sphere
+	}{
+		{
+			expectedColor:     color2.RGBA{R: 0, G: 0, B: 255, A: 255},
+			firstSphereAdded:  blueAtZ50,
+			secondSphereAdded: redAtZ100,
+		},
+		{
+			expectedColor:     color2.RGBA{R: 0, G: 0, B: 255, A: 255},
+			firstSphereAdded:  redAtZ100,
+			secondSphereAdded: blueAtZ50,
+		},
+	}
+
+	for i, tt := range tests {
+		origin := Vector.New(0, 0, 0)
+
+		camera := New(1, 1, *origin)
+		camera.SetObject(tt.firstSphereAdded)
+		camera.SetObject(tt.secondSphereAdded)
+		color := camera.CastRays()[0].Color()
+
+		if color != tt.expectedColor {
+			t.Errorf("Test %d: Center of camera: Expected color to be: '%v', but got '%v'", i, tt.expectedColor, color)
+		}
+	}
+}
+
 func TestWalking(t *testing.T) {
 	spherePosition := Vector.New(0, 0, 50)
 	colorVector := *Vector.New(0, 0, 0)
@@ -167,7 +206,7 @@ func TestWalking(t *testing.T) {
 	backgroundCamera := New(1, 1, *origin)
 
 	camera := New(1, 1, *origin)
-	camera.SetObject(Object.NewSphere(*spherePosition,colorVector, 1))
+	camera.SetObject(Object.NewSphere(*spherePosition, colorVector, 1))
 
 	turnQuarterLeft := func() {
 		turnLeft(camera, 16)
@@ -220,8 +259,6 @@ func BenchmarkCamera_GetPixelHeadingVector(b *testing.B) {
 	}
 }
 
-//func BenchmarkCamera_CastRays10(b *testing.B)      { benchmarkCastRays(b, 10) }
-//func BenchmarkCamera_CastRays1000(b *testing.B)    { benchmarkCastRays(b, 1000) }
 func BenchmarkCamera_CastRays1000000(b *testing.B) { benchmarkCastRays(b, 1000000) }
 
 func BenchmarkConcurrent_Camera_CastRays1000000(b *testing.B) { benchmarkCastRaysConcurrent(b, 1000000) }

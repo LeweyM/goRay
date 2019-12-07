@@ -6,6 +6,7 @@ import (
 	"goRay/Vector"
 	"image/color"
 	"math"
+	"math/rand"
 	"sync"
 )
 
@@ -24,6 +25,7 @@ type Camera struct {
 	cameraRotationTransformer func(Vector.Vector) Vector.Vector
 	CameraPosition            Vector.Vector
 	primaryRays               []Ray.Ray
+	antiAliasingFactor        int
 }
 
 func New(width int, height int, origin Vector.Vector) *Camera {
@@ -48,6 +50,7 @@ func New(width int, height int, origin Vector.Vector) *Camera {
 		ObjectList:                []Object.Object{},
 		YRotation:                 0,
 		CameraPosition:            Vector.Vector{},
+		antiAliasingFactor:        0,
 	}
 }
 
@@ -108,8 +111,18 @@ func (c *Camera) CastRays() []Pixel {
 
 			primaryRay := Ray.New(c.CameraPosition, rotatedVector)
 
-			c.primaryRays = append(c.primaryRays, primaryRay)
-			c.pixelList = append(c.pixelList, c.getPixel(xIndex, yIndex, primaryRay))
+			var pixel Pixel
+			if c.antiAliasingFactor > 0 {
+				pixel = c.processAntiAliasing(headingVector, xIndex, yIndex, c.antiAliasingFactor)
+			} else {
+				r, g, b, a := colorVectorToRGB(c.getColor(primaryRay))
+				pixel = Pixel{
+					color: color.RGBA{R: r, G: g, B: b, A: a},
+					x:     xIndex,
+					y:     yIndex,
+				}
+			}
+			c.pixelList = append(c.pixelList, pixel)
 		}
 	}
 
@@ -133,7 +146,18 @@ func (c *Camera) CastRaysConcurrent() []Pixel {
 
 				primaryRay := Ray.New(c.CameraPosition, rotatedVector)
 
-				list[y*c.width+x] = c.getPixel(x, y, primaryRay)
+				var pixel Pixel
+				if c.antiAliasingFactor > 0 {
+					pixel = c.processAntiAliasing(headingVector, x, y, c.antiAliasingFactor)
+				} else {
+					r, g, b, a := colorVectorToRGB(c.getColor(primaryRay))
+					pixel = Pixel{
+						color: color.RGBA{R: r, G: g, B: b, A: a},
+						x:     x,
+						y:     y,
+					}
+				}
+				list[y*c.width+x] = pixel
 			}
 		}
 	}
@@ -141,7 +165,7 @@ func (c *Camera) CastRaysConcurrent() []Pixel {
 	var wg sync.WaitGroup
 	list := make([]Pixel, c.width*c.height)
 
-	cpuSplitFactor := 6
+	cpuSplitFactor := 4
 
 	for c.height%cpuSplitFactor != 0 && cpuSplitFactor != 1 {
 		cpuSplitFactor--
@@ -192,7 +216,7 @@ func (p Pixel) Color() color.Color {
 	return p.color
 }
 
-func (c *Camera) getPixel(x, y int, ray Ray.Ray) Pixel {
+func (c *Camera) getColor(ray Ray.Ray) Vector.Vector {
 	type objectWithDistance struct {
 		object Object.Object
 		t      float64
@@ -205,60 +229,46 @@ func (c *Camera) getPixel(x, y int, ray Ray.Ray) Pixel {
 	for _, object := range c.ObjectList {
 		intersects, t := object.IntersectDistance(ray)
 
-		if intersects {
-			if t < intersectionObject.t {
-				intersectionObject = objectWithDistance{
-					object: object,
-					t:      t,
-				}
+		if intersects && t < intersectionObject.t {
+			intersectionObject = objectWithDistance{
+				object: object,
+				t:      t,
 			}
 		}
 	}
 
 	if intersectionObject.object != nil {
-		return Pixel{
-			color: getColorFromObject(ray, intersectionObject.t, intersectionObject.object),
-			x:     x,
-			y:     y,
-		}
+		return getColorFromObject(ray, intersectionObject.t, intersectionObject.object)
 	} else {
-		return getBackgroundPixel(ray, x, y)
+		vector := getBackgroundColor(ray)
+		return vector
 	}
 }
 
-func getColorFromObject(ray Ray.Ray, t float64, object Object.Object) color.RGBA {
+func getColorFromObject(ray Ray.Ray, t float64, object Object.Object) Vector.Vector {
 	hitNormal := object.GetHitNormal(ray, t)
 	colorVector := object.GetSurfaceColor()
 	facingRatio := hitNormal.Dot(ray.Direction().Reverse())
 	facingRatio = math.Max(0, facingRatio)
 
-	rr, gg, bb := scaleRGB(colorVector.X(), colorVector.Y(), colorVector.Z(), facingRatio)
-
-	return color.RGBA{R: rr, G: gg, B: bb, A: 255}
+	return colorVector.Scale(facingRatio * 255.99)
 }
 
-func getBackgroundPixel(ray Ray.Ray, x, y int) Pixel {
+func getBackgroundColor(ray Ray.Ray) Vector.Vector {
 	dir := ray.Direction()
 	t := dir.Y()*0.5 + 1
 	blue := Vector.New(0.5, 0.7, 1.0)
 	white := Vector.New(1, 1, 1)
 	lerp := white.Scale(1 - t).Translate(blue.Scale(t))
 
-	rr, gg, bb := scaleRGB(lerp.X(), lerp.Y(), lerp.Z(), 1.0)
-
-	return Pixel{
-		color: color.RGBA{R: rr, G: gg, B: bb, A: 255},
-		x:     x,
-		y:     y,
-	}
+	return lerp.Scale(255.99)
 }
 
-func scaleRGB(r, g, b, f float64) (uint8, uint8, uint8) {
-	scale := f * 255.99
-	rr := uint8(scale * r)
-	gg := uint8(scale * g)
-	bb := uint8(scale * b)
-	return rr, gg, bb
+func colorVectorToRGB(colorVector Vector.Vector) (uint8, uint8, uint8, uint8) {
+	r := uint8(colorVector.X())
+	g := uint8(colorVector.Y())
+	b := uint8(colorVector.Z())
+	return r, g, b, 255
 }
 
 func getScreenMatrix(scale float64) []float64 {
@@ -267,4 +277,33 @@ func getScreenMatrix(scale float64) []float64 {
 		cells = append(cells, -(scale/2)+(i+0.5))
 	}
 	return cells
+}
+
+func (c *Camera) processAntiAliasing(headingVector *Vector.Vector, xIndex, yIndex, aaFactor int) Pixel {
+	var pixel Pixel
+	var colorVector Vector.Vector
+	for aa := 0; aa < aaFactor; aa++ {
+		randX := rand.Float64() / float64(aaFactor)
+		randY := rand.Float64() / float64(aaFactor)
+		randomOffset := Vector.New(randX, randY, 0)
+		aaHeadingVector := headingVector.Translate(*randomOffset).Normalize()
+		aaRotatedVector := c.cameraRotationTransformer(aaHeadingVector)
+
+		aaRay := Ray.New(c.CameraPosition, aaRotatedVector)
+
+		colorVector = colorVector.Translate(c.getColor(aaRay))
+	}
+	r, g, b, a := colorVectorToRGB(colorVector.Scale(1 / float64(aaFactor)))
+
+	pixel = Pixel{
+		color: color.RGBA{R: r, G: g, B: b, A: a},
+		x:     xIndex,
+		y:     yIndex,
+	}
+
+	return pixel
+}
+
+func (c *Camera) SetAntiAliasing(aaFactor int) {
+	c.antiAliasingFactor = aaFactor
 }

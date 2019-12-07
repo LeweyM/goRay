@@ -30,28 +30,32 @@ func Render(w, h int32, camera Camera.Camera) {
 		panic(err)
 	}
 
+	stateHasChanged := true
 	running := true
 	for running {
 
-		renderer.SetDrawColor(0, 0, 0, 0)
-		renderer.Clear()
+		if stateHasChanged {
+			_ = renderer.SetDrawColor(0, 0, 0, 0)
+			_ = renderer.Clear()
 
-		drawPixels(camera.CastRays(), w, h, renderer)
+			drawPixels(camera.CastRaysConcurrent(), w, h, renderer)
 
-		drawPrimaryRays(camera, renderer)
-		drawVerticalPrimaryRays(camera, renderer)
+			drawPrimaryRays(camera, renderer)
+			drawVerticalPrimaryRays(camera, renderer)
 
-		//drawRays(camera, renderer)
+			//drawRays(camera, renderer)
 
-		//drawRotationLine(camera, renderer)
+			//drawMiniMap(camera.CameraPosition, renderer)
 
-		//drawMiniMap(camera.CameraPosition, renderer)
+			drawObjects(camera.ObjectList, renderer)
 
-		drawObjects(camera.ObjectList, renderer)
+			renderer.Present()
 
-		renderer.Present()
+			_ = window.UpdateSurface()
 
-		window.UpdateSurface()
+			stateHasChanged = false
+		}
+
 
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			switch e := event.(type) {
@@ -62,15 +66,19 @@ func Render(w, h int32, camera Camera.Camera) {
 			case *sdl.KeyboardEvent:
 				if e.Keysym.Sym == sdl.K_LEFT {
 					camera.DecrementYRotation()
+					stateHasChanged = true
 				}
 				if e.Keysym.Sym == sdl.K_RIGHT {
 					camera.IncrementYRotation()
+					stateHasChanged = true
 				}
 				if e.Keysym.Sym == sdl.K_UP {
 					camera.IncrementForward()
+					stateHasChanged = true
 				}
 				if e.Keysym.Sym == sdl.K_DOWN {
 					camera.DecrementForward()
+					stateHasChanged = true
 				}
 				break
 			}

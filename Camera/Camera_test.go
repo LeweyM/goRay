@@ -207,6 +207,7 @@ func TestWalking(t *testing.T) {
 
 	camera := New(1, 1, *origin)
 	camera.SetObject(Object.NewSphere(*spherePosition, colorVector, 1))
+	//camera.SetAntiAliasing(100)
 
 	turnQuarterLeft := func() {
 		turnLeft(camera, 16)
@@ -259,9 +260,9 @@ func BenchmarkCamera_GetPixelHeadingVector(b *testing.B) {
 	}
 }
 
-func BenchmarkCamera_CastRays1000000(b *testing.B) { benchmarkCastRays(b, 1000000) }
+func BenchmarkCamera_CastRays100(b *testing.B) { benchmarkCastRays(b, 100) }
 
-func BenchmarkConcurrent_Camera_CastRays1000000(b *testing.B) { benchmarkCastRaysConcurrent(b, 1000000) }
+func BenchmarkConcurrent_Camera_CastRays100(b *testing.B) { benchmarkCastRaysConcurrent(b, 100) }
 
 func benchmarkCastRays(b *testing.B, n int) {
 	c := New(100, 100, *Vector.New(0, 0, 0))

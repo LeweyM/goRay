@@ -14,6 +14,7 @@ func main() {
 
 	camOrigin := Vector.New(0, 0, 100)
 	camera := Camera.New(w, h, *camOrigin)
+	camera.SetAntiAliasing(15)
 
 	white := *Vector.New(1.0, 1.0, 1.0)
 	red := *Vector.New(1.0, 0.0, 0.0)

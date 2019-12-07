@@ -133,8 +133,6 @@ func (c *Camera) CastRaysConcurrent() []Pixel {
 
 				primaryRay := Ray.New(c.CameraPosition, rotatedVector)
 
-				c.primaryRays = append(c.primaryRays, primaryRay)
-				//c.pixelList = append(c.pixelList, c.getPixel(x, y, primaryRay))
 				list[y * c.width + x] = c.getPixel(x, y, primaryRay)
 			}
 		}
@@ -143,9 +141,9 @@ func (c *Camera) CastRaysConcurrent() []Pixel {
 	var wg sync.WaitGroup
 	list := make([]Pixel, c.width * c.height)
 
-	cpuSplitFactor := 12
+	cpuSplitFactor := 6
 
-	for c.height%cpuSplitFactor != 0 || cpuSplitFactor == 1 {
+	for c.height%cpuSplitFactor != 0 && cpuSplitFactor != 1 {
 		cpuSplitFactor--
 	}
 
